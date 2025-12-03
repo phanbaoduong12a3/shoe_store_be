@@ -197,54 +197,60 @@ exports.createBrand = async (req, res) => {
 // ADMIN: CẬP NHẬT THƯƠNG HIỆU
 // =============================================
 exports.updateBrand = async (req, res) => {
-  try {
-    const brandId = req.params.id;
-    const updateData = req.body;
+    try {
+        const brandId = req.params.id;
+        let updateData = req.body; 
+        const logoFile = req.file.path; 
+        
+        if (updateData.isActive !== undefined) {
+             updateData.isActive = updateData.isActive === 'true';
+        }
+        
+        if (logoFile) {
+            updateData.logo = logoFile;
+        }
 
-    // Kiểm tra brand tồn tại
-    const brand = await Brand.findById(brandId);
-    if (!brand) {
-      return res.status(404).json({ 
-        status: 404, 
-        data: { message: 'Brand not found' } 
-      });
-    }
+        const brand = await Brand.findById(brandId);
+        if (!brand) {
+             return res.status(404).json({ 
+                 status: 404, 
+                 data: { message: 'Brand not found' } 
+             });
+        }
 
-    // Kiểm tra slug nếu có thay đổi
-    if (updateData.slug && updateData.slug !== brand.slug) {
-      const existingBrand = await Brand.findOne({ 
-        slug: updateData.slug, 
-        _id: { $ne: brandId } 
-      });
-      if (existingBrand) {
-        return res.status(400).json({ 
-          status: 400, 
-          data: { message: 'Slug already exists' } 
+        if (updateData.slug && updateData.slug !== brand.slug) {
+            const existingBrand = await Brand.findOne({ 
+                slug: updateData.slug, 
+                _id: { $ne: brandId } 
+            });
+            if (existingBrand) {
+                return res.status(400).json({ 
+                    status: 400, 
+                    data: { message: 'Slug already exists' } 
+                });
+            }
+        }
+
+        const updatedBrand = await Brand.findByIdAndUpdate(
+            brandId,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        res.status(200).json({ 
+            status: 200, 
+            data: { 
+                message: 'Cập nhật thương hiệu thành công!',
+                brand: updatedBrand
+            } 
         });
-      }
+    } catch (error) {
+        console.error('UpdateBrand Error:', error);
+        res.status(500).json({ 
+            status: 500, 
+            data: { message: 'Server error', error: error.message } 
+        });
     }
-
-    // Cập nhật brand
-    const updatedBrand = await Brand.findByIdAndUpdate(
-      brandId,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
-    res.status(200).json({ 
-      status: 200, 
-      data: { 
-        message: 'Brand updated successfully',
-        brand: updatedBrand
-      } 
-    });
-  } catch (error) {
-    console.error('UpdateBrand Error:', error);
-    res.status(500).json({ 
-      status: 500, 
-      data: { message: 'Server error', error: error.message } 
-    });
-  }
 };
 
 // =============================================

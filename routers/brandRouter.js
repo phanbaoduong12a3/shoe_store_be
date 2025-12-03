@@ -39,7 +39,7 @@ router.get("/brands/slug/:slug", getBrandBySlug);
 router.post("/admin/brands", checkLogin, checkAdmin, uploadBrandLogo, createBrand);
 
 // Cập nhật thông tin thương hiệu
-router.put("/admin/brands/:id", checkLogin, checkAdmin, updateBrand);
+router.put("/admin/brands/:id", checkLogin, checkAdmin,uploadBrandLogo, updateBrand);
 
 // Xóa thương hiệu
 router.delete("/admin/brands/:id", checkLogin, checkAdmin, deleteBrand);
