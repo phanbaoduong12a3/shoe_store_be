@@ -44,19 +44,19 @@ router.get("/categories/slug/:slug", getCategoryBySlug);
 // =============================================
 
 // Tạo danh mục mới (có thể upload image)
-// POST /api/admin/categories
+// POST /api/v1/admin/categories
 router.post("/admin/categories", checkLogin, checkAdmin, uploadCategoryImage, createCategory);
 
 // Cập nhật danh mục
-// PUT /api/admin/categories/:id
+// PUT /api/v1/admin/categories/:id
 router.put("/admin/categories/:id", checkLogin, checkAdmin, updateCategory);
 
 // Xóa danh mục
-// DELETE /api/admin/categories/:id
+// DELETE /api/v1/admin/categories/:id
 router.delete("/admin/categories/:id", checkLogin, checkAdmin, deleteCategory);
 
 // Cập nhật hình ảnh danh mục
-// PUT /api/admin/categories/:id/image
+// PUT /api/v1/admin/categories/:id/image
 router.put("/admin/categories/:id/image", checkLogin, checkAdmin, uploadCategoryImage, updateCategoryImage);
 
 
@@ -291,7 +291,7 @@ module.exports = router;
 
 /**
  * @swagger
- * /api/admin/categories:
+ * /api/v1/admin/categories:
  *   post:
  *     summary: Tạo danh mục mới (Admin)
  *     tags: [Categories - Admin]
@@ -362,7 +362,7 @@ module.exports = router;
 
 /**
  * @swagger
- * /api/admin/categories/{id}:
+ * /api/v1/admin/categories/{id}:
  *   put:
  *     summary: Cập nhật danh mục (Admin)
  *     tags: [Categories - Admin]
@@ -475,7 +475,7 @@ module.exports = router;
 
 /**
  * @swagger
- * /api/admin/categories/{id}/image:
+ * /api/v1/admin/categories/{id}/image:
  *   put:
  *     summary: Cập nhật hình ảnh danh mục (Admin)
  *     tags: [Categories - Admin]

@@ -10,21 +10,25 @@ const { JWT_PASS } = process.env;
 // =============================================
 exports.checkLogin = async (req, res, next) => {
   try {
-    const token = req.headers.authorization;
-    
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    let token;
+    if (!authHeader) {
       return res.status(401).json({ 
         status: 401, 
         data: { message: 'Not logged in. Please login to continue' } 
       });
     }
-
+    if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        } else {
+            token = authHeader; 
+        }
     // Verify token
     const decoded = jwt.verify(token, JWT_PASS);
+    console.log(decoded);
     
     // Kiểm tra user có tồn tại và token còn hợp lệ
     const user = await User.findOne({ _id: decoded.userId, token });
-    
     if (!user) {
       return res.status(401).json({ 
         status: 401, 

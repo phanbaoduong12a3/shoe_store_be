@@ -24,9 +24,17 @@ const option = {
 			version: "1.0.0",
 			description: "Đây là tổng hợp tất cả API"
 		},
+		components: {
+            securitySchemes: {
+                bearerAuth: { 
+                    type: 'http',
+                    scheme: 'bearer',
+                }
+            }
+        },
 		server: [
 			{
-				url: "http://localhost:4000"
+				url: "http://localhost:8080"
 			}
 		],
 	},
