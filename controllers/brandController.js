@@ -166,7 +166,7 @@ exports.createBrand = async (req, res) => {
     }
 
     // Xử lý logo nếu có upload
-    const logo = req.file ? req.file.path : null;
+    const logo = req?.file?.path || null;
 
     // Tạo brand mới
     const newBrand = await Brand.create({
@@ -200,7 +200,7 @@ exports.updateBrand = async (req, res) => {
     try {
         const brandId = req.params.id;
         let updateData = req.body; 
-        const logoFile = req.file.path; 
+        const logoFile = req?.file?.path; 
         
         if (updateData.isActive !== undefined) {
              updateData.isActive = updateData.isActive === 'true';
@@ -383,7 +383,7 @@ exports.toggleBrandStatus = async (req, res) => {
     res.status(200).json({ 
       status: 200, 
       data: { 
-        message: `Brand ${isActive ? 'activated' : 'deactivated'} successfully`,
+        message: `${isActive ? 'Mở hiển thị thương hiệu thành công!' : 'Tắt hiển thị thương hiệu thành công!'}`,
         brand: updatedBrand
       } 
     });

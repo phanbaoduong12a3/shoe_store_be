@@ -180,7 +180,7 @@ exports.getProductBySlug = async (req, res) => {
 // =============================================
 exports.createProduct = async (req, res) => {
   try {
-    const {
+    let {
       name,
       slug,
       sku,
@@ -191,13 +191,26 @@ exports.createProduct = async (req, res) => {
       price,
       salePrice,
       costPrice,
-      images,
       variants,
       specifications,
       seo,
       isFeatured,
       isNew
     } = req.body;
+
+    // Convert multipart string -> JSON
+    if (variants && typeof variants === "string") {
+      variants = JSON.parse(variants);
+    }
+    if (specifications && typeof specifications === "string") {
+      specifications = JSON.parse(specifications);
+    }
+    if (seo && typeof seo === "string") {
+      seo = JSON.parse(seo);
+    }
+
+    const images = req.files?.map(file => file.path) || [];
+
 
     // Validate input
     if (!name || !slug || !sku || !categoryId || !brandId || !price) {

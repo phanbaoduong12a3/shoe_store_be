@@ -47,11 +47,11 @@ router.get("/products/:id/related", getRelatedProducts);
 // Tạo sản phẩm mới
 // POST /api/v1/admin/products
 // Body: { name, slug, sku, description, shortDescription, categoryId, brandId, price, salePrice?, costPrice?, images?, variants?, specifications?, seo?, isFeatured?, isNew? }
-router.post("/admin/products", checkLogin, checkAdmin, createProduct);
+router.post("/admin/products", checkLogin, checkAdmin, uploadProductImages, createProduct);
 
 // Cập nhật sản phẩm
 // PUT /api/v1/admin/products/:id
-router.put("/admin/products/:id", checkLogin, checkAdmin, updateProduct);
+router.put("/admin/products/:id", checkLogin, checkAdmin, uploadProductImages, updateProduct);
 
 // Xóa sản phẩm
 // DELETE /api/v1/admin/products/:id
