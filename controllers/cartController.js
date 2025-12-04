@@ -232,8 +232,7 @@ exports.addToCart = async (req, res) => {
 // =============================================
 exports.updateCartItem = async (req, res) => {
   try {
-    const userId = req.user?.userId;
-    const { sessionId, productId, variantId, quantity } = req.body;
+    const { userId, sessionId, productId, variantId, quantity } = req.body;
 
     // Validate input
     if (!productId || !variantId || !quantity) {
@@ -346,8 +345,8 @@ exports.updateCartItem = async (req, res) => {
 // =============================================
 exports.removeFromCart = async (req, res) => {
   try {
-    const userId = req.user?.userId;
-    const { sessionId, productId, variantId } = req.body;
+    // const userId = req.user?.userId ?? null;
+    const {userId, sessionId, productId, variantId } =req.query;
 
     // Validate input
     if (!productId || !variantId) {
