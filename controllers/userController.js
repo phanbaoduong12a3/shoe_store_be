@@ -26,6 +26,30 @@ const upload = multer({
 exports.uploadAvatar = upload.single('avatar');
 
 
+/**
+ * LẤY THÔNG TIN USER HIỆN TẠI QUA ACCESS_TOKEN
+ */
+exports.getCurrentUser = async (req, res) => {
+  try {
+    // req.user đã được checkLogin middleware gắn vào
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        data: { message: 'Not logged in' }
+      });
+    }
+    res.status(200).json({
+      status: 200,
+      data: { user: req.user }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 500,
+      data: { message: 'Server error', error: error.message }
+    });
+  }
+};
+
 // =============================================
 // LẤY THÔNG TIN USER THEO ID
 // =============================================

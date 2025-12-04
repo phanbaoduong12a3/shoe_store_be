@@ -207,7 +207,7 @@ exports.getOrderById = async (req, res) => {
       data: { order } 
     });
   } catch (error) {
-    console.error('GetOrderById Error:', error);
+    console.error('test Error:', error);
     res.status(500).json({ 
       status: 500, 
       data: { message: 'Server error', error: error.message } 

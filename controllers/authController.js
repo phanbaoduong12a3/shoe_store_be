@@ -63,15 +63,21 @@ exports.signUp = async (req, res) => {
       role: 'customer'
     });
 
-    // Tạo JWT token
-    const token = jwt.sign(
+    // Tạo access token (1 ngày) và refresh token (7 ngày)
+    const accessToken = jwt.sign(
+      { userId: newUser._id, email: newUser.email, role: newUser.role },
+      JWT_PASS,
+      { expiresIn: '1d' }
+    );
+    const refreshToken = jwt.sign(
       { userId: newUser._id, email: newUser.email, role: newUser.role },
       JWT_PASS,
       { expiresIn: '7d' }
     );
 
     // Lưu token vào user
-    newUser.token = token;
+    newUser.token = accessToken;
+    newUser.refreshToken = refreshToken;
     await newUser.save();
 
     res.status(200).json({ 
@@ -79,13 +85,14 @@ exports.signUp = async (req, res) => {
       data: { 
         message: 'Create account successfully',
         user: {
-          id: newUser._id,
+          _id: newUser._id,
           email: newUser.email,
           fullName: newUser.fullName,
           phone: newUser.phone,
           role: newUser.role
         },
-        token
+        accessToken,
+        refreshToken
       } 
     });
   } catch (error) {
@@ -130,15 +137,21 @@ exports.signIn = async (req, res) => {
       });
     }
 
-    // Tạo JWT token
-    const token = jwt.sign(
+    // Tạo access token (15 phút) và refresh token (7 ngày)
+    const accessToken = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role },
+      JWT_PASS,
+      { expiresIn: '1d' }
+    );
+    const refreshToken = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
       JWT_PASS,
       { expiresIn: '7d' }
     );
 
     // Lưu token vào user
-    user.token = token;
+    user.token = accessToken;
+    user.refreshToken = refreshToken;
     await user.save();
 
     res.status(200).json({ 
@@ -146,7 +159,7 @@ exports.signIn = async (req, res) => {
       data: { 
         message: 'Login successfully',
         user: {
-          id: user._id,
+          _id: user._id,
           email: user.email,
           fullName: user.fullName,
           phone: user.phone,
@@ -154,7 +167,8 @@ exports.signIn = async (req, res) => {
           role: user.role,
           loyaltyPoints: user.loyaltyPoints
         },
-        token
+        accessToken,
+        refreshToken
       } 
     });
   } catch (error) {
@@ -429,6 +443,64 @@ exports.getCurrentUser = async (req, res) => {
     res.status(500).json({ 
       status: 500, 
       data: { message: 'Server error', error: error.message } 
+    });
+  }
+};
+
+// =============================================
+// LÀM MỚI ACCESS TOKEN TỪ REFRESH TOKEN
+// =============================================
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({
+        status: 400,
+        data: { message: 'Refresh token is required' }
+      });
+    }
+
+    // Tìm user theo refreshToken
+    const user = await User.findOne({ refreshToken });
+    if (!user) {
+      return res.status(401).json({
+        status: 401,
+        data: { message: 'Invalid refresh token' }
+      });
+    }
+
+    // Xác thực refreshToken
+    jwt.verify(refreshToken, JWT_PASS, (err, decoded) => {
+      if (err) {
+        return res.status(401).json({
+          status: 401,
+          data: { message: 'Refresh token expired or invalid' }
+        });
+      }
+
+      // Sinh accessToken mới
+      const newAccessToken = jwt.sign(
+        { userId: user._id, email: user.email, role: user.role },
+        JWT_PASS,
+        { expiresIn: '1d' }
+      );
+
+      // Lưu accessToken mới vào user
+      user.token = newAccessToken;
+      user.save();
+
+      res.status(200).json({
+        status: 200,
+        data: {
+          accessToken: newAccessToken
+        }
+      });
+    });
+  } catch (error) {
+    console.error('RefreshToken Error:', error);
+    res.status(500).json({
+      status: 500,
+      data: { message: 'Server error', error: error.message }
     });
   }
 };

@@ -24,11 +24,14 @@ const {
 // Tạo đơn hàng mới (có thể không cần login cho guest checkout)
 // POST /api/v1/orders
 // Body: { userId?, customer, shippingAddress, items, subtotal, shippingFee?, discount?, voucherCode?, loyaltyPointsUsed?, loyaltyPointsDiscount?, totalAmount, paymentMethod, note? }
-router.post("/orders", createOrder);
+router.post("/orders",createOrder);
 
 // Lấy đơn hàng theo order number (cho guest tracking)
 // GET /api/v1/orders/number/:orderNumber
 router.get("/orders/number/:orderNumber", getOrderByNumber);
+// Lấy danh sách đơn hàng của user đăng nhập
+// GET /api/v1/orders/my-orders?page=1&limit=10&status=pending
+router.get("/orders/my_orders", checkLogin, getUserOrders);
 
 // Lấy đơn hàng theo ID
 // GET /api/v1/orders/:id
@@ -38,9 +41,6 @@ router.get("/orders/:id", getOrderById);
 // USER ROUTES (yêu cầu đăng nhập)
 // =============================================
 
-// Lấy danh sách đơn hàng của user đăng nhập
-// GET /api/v1/orders/my-orders?page=1&limit=10&status=pending
-router.get("/orders/my-orders", checkLogin, getUserOrders);
 
 // Hủy đơn hàng (chỉ pending/confirmed)
 // PUT /api/v1/orders/:id/cancel

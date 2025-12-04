@@ -44,8 +44,8 @@ const option = {
 const app = express();
 app.use(cros());
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(limiter);
+app.use(express.urlencoded({ extended: true }));
+// app.use(limiter);
 
 const specs = swaggerJsDoc(option);
 

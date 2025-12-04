@@ -4,59 +4,83 @@ require('dotenv').config();
 // =============================================
 // LẤY GIỎ HÀNG
 // =============================================
-exports.getCart = async (req, res) => {
-  try {
-    const userId = req.user?.userId; // Lấy từ middleware auth nếu có
-    const sessionId = req.body.sessionId || req.query.sessionId; // Lấy từ body hoặc query
-
-    // Tìm giỏ hàng theo userId hoặc sessionId
+exports.getCart = async (req, res) => { 
+  try { 
+    console.log('GetCart called with query:', req.query); 
+    
+    const userId = req.query.userId;  
+    const sessionId = req.query.sessionId; 
+ 
+    if (!userId && !sessionId) { 
+      return res.status(400).json({  
+        status: 400,  
+        data: { message: 'userId or sessionId is required' }  
+      }); 
+    } 
+ 
+    // Tìm giỏ hàng - ưu tiên userId nếu có
     let cart;
     if (userId) {
-      cart = await Cart.findOne({ userId })
+      cart = await Cart.findOne({ userId, userId: { $ne: null } })
         .populate('items.productId', 'name slug images price salePrice isActive');
     } else if (sessionId) {
-      cart = await Cart.findOne({ sessionId })
+      cart = await Cart.findOne({ sessionId, sessionId: { $ne: null } })
         .populate('items.productId', 'name slug images price salePrice isActive');
-    } else {
-      return res.status(400).json({ 
-        status: 400, 
-        data: { message: 'UserId or sessionId is required' } 
-      });
     }
-
-    if (!cart) {
-      return res.status(200).json({ 
-        status: 200, 
+ 
+    // Nếu chưa có cart thì trả về cấu trúc mặc định 
+    if (!cart) { 
+      return res.status(200).json({  
+        status: 200,  
         data: { 
-          cart: {
-            items: [],
-            totalAmount: 0
-          }
-        } 
-      });
+          cart: { 
+            items: [], 
+            totalAmount: 0,
+            userId: userId || null,
+            sessionId: sessionId || null
+          } 
+        }  
+      }); 
     }
 
-    res.status(200).json({ 
-      status: 200, 
-      data: { cart } 
-    });
-  } catch (error) {
-    console.error('GetCart Error:', error);
-    res.status(500).json({ 
-      status: 500, 
-      data: { message: 'Server error', error: error.message } 
-    });
-  }
-};
+    // Filter out any items with null/inactive products
+    const validItems = cart.items.filter(item => 
+      item.productId && item.productId.isActive
+    );
 
+    res.status(200).json({  
+      status: 200,  
+      data: { 
+        cart: {
+          _id: cart._id,
+          userId: cart.userId,
+          sessionId: cart.sessionId,
+          items: validItems,
+          totalAmount: cart.totalAmount,
+          createdAt: cart.createdAt,
+          updatedAt: cart.updatedAt
+        }
+      }  
+    }); 
+ 
+  } catch (error) { 
+    console.error('GetCart Error:', error); 
+    res.status(500).json({  
+      status: 500,  
+      data: { message: 'Server error', error: error.message }  
+    }); 
+  } 
+}
 // =============================================
 // THÊM SẢN PHẨM VÀO GIỎ HÀNG
 // =============================================
 exports.addToCart = async (req, res) => {
   try {
-    const userId = req.user?.userId; // Lấy từ middleware auth nếu có
+
+
     const {
       sessionId,
+      userId,
       productId,
       variantId,
       quantity
@@ -400,22 +424,17 @@ exports.removeFromCart = async (req, res) => {
 exports.clearCart = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const { sessionId } = req.body;
 
-    if (!userId && !sessionId) {
+    if (!userId) {
       return res.status(400).json({ 
         status: 400, 
-        data: { message: 'UserId or sessionId is required' } 
+        data: { message: 'UserId is required' } 
       });
     }
 
     // Tìm giỏ hàng
     let cart;
-    if (userId) {
-      cart = await Cart.findOne({ userId });
-    } else {
-      cart = await Cart.findOne({ sessionId });
-    }
+    cart = await Cart.findOne({ userId });
 
     if (!cart) {
       return res.status(404).json({ 

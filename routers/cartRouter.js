@@ -39,7 +39,7 @@ router.delete("/cart/remove", removeFromCart);
 
 // Xóa toàn bộ giỏ hàng
 // Body: { sessionId? }
-router.delete("/cart/clear", clearCart);
+router.delete("/cart/clear", checkLogin, clearCart);
 
 // Hợp nhất giỏ hàng (khi user đăng nhập)
 // Body: { sessionId }

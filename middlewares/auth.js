@@ -27,6 +27,18 @@ exports.checkLogin = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_PASS);
     console.log(decoded);
     
+  const parts = authHeader.split(' ');
+
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return res.status(401).json({
+      status: 401,
+      data: { message: 'Invalid token format' }
+    });
+  }
+
+  // Verify token
+
+
     // Kiểm tra user có tồn tại và token còn hợp lệ
     const user = await User.findOne({ _id: decoded.userId, token });
     if (!user) {
@@ -55,7 +67,7 @@ exports.checkLogin = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
         status: 401, 
-        data: { message: 'Token expired. Please login again' } 
+        data: { message: 'Token expired. Please use refresh token to get a new access token' } 
       });
     }
     res.status(500).json({ 

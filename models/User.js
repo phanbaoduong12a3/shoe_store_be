@@ -23,7 +23,8 @@ const UserSchema = mongoose.Schema({
   addresses: [AddressSchema],
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'products' }],
   loyaltyPoints: { type: Number, default: 0 },
-  token: String
+  token: String,
+  refreshToken: String
 }, { timestamps: true, collection: 'users' });
 
 const User = mongoose.model('users', UserSchema);
@@ -133,4 +134,3 @@ module.exports = User;
  *           default: false
  *           example: true
  */
-

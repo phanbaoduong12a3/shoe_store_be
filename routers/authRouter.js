@@ -9,6 +9,7 @@ const {
   signOut,
   signUp,
   verifyResetCode,
+  refreshToken,
 } = authController;
 const { checkLogin } = require("../middlewares/auth");
 
@@ -375,5 +376,48 @@ router.post("/signout", checkLogin, signOut);
  */
 router.get("/me", checkLogin, getCurrentUser);
 
+
+/**
+ * @swagger
+ * /api/v1/refresh-token:
+ *   post:
+ *     summary: Làm mới access token từ refresh token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 example: "your_refresh_token"
+ *     responses:
+ *       200:
+ *         description: Access token mới
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *       400:
+ *         description: Thiếu refresh token
+ *       401:
+ *         description: Refresh token không hợp lệ hoặc hết hạn
+ *       500:
+ *         description: Lỗi server
+ */
+router.post("/refresh-token", refreshToken);
 
 module.exports = router;

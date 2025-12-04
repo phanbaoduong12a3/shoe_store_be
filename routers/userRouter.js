@@ -16,8 +16,10 @@ const {
   getWishlist,
   getAllUsers,
   deleteUser,
+  getCurrentUser,
 } = userController;
 
+router.get("/me", checkLogin, getCurrentUser);
 // User routes
 router.get("/profile/:id", checkLogin, getUserById);
 router.put("/profile", checkLogin, updateProfile);
