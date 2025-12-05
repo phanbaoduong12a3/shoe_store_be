@@ -196,7 +196,7 @@ exports.createProduct = async (req, res) => {
       seo,
       isFeatured,
       isNew
-    } = req.body;
+    } = req?.body;
 
     // Convert multipart string -> JSON
     if (variants && typeof variants === "string") {
@@ -209,7 +209,7 @@ exports.createProduct = async (req, res) => {
       seo = JSON.parse(seo);
     }
 
-    const images = req.files?.map(file => file.path) || [];
+    const images = req?.files?.map(file => file.path) || [];
 
 
     // Validate input
@@ -430,20 +430,18 @@ exports.deleteProduct = async (req, res) => {
 exports.updateProductStatus = async (req, res) => {
   try {
     const productId = req.params.id;
-    const { isActive } = req.body;
-
-    if (isActive === undefined) {
-      return res.status(400).json({ 
-        status: 400, 
-        data: { message: 'isActive is required' } 
-      });
-    }
+    const { isActive, isNew, isFeatured } = req.body;
 
     const updatedProduct = await Product.findByIdAndUpdate(
       productId,
-      { isActive },
+      {
+        isActive,
+        isNew,
+        isFeatured,
+      },
       { new: true }
     );
+
 
     if (!updatedProduct) {
       return res.status(404).json({ 
@@ -455,7 +453,7 @@ exports.updateProductStatus = async (req, res) => {
     res.status(200).json({ 
       status: 200, 
       data: { 
-        message: 'Product status updated successfully',
+        message: 'Cập nhật trạng thái sản phẩm thành công',
         product: updatedProduct
       } 
     });
@@ -463,7 +461,7 @@ exports.updateProductStatus = async (req, res) => {
     console.error('UpdateProductStatus Error:', error);
     res.status(500).json({ 
       status: 500, 
-      data: { message: 'Server error', error: error.message } 
+      data: { message: 'Có lỗi xảy ra!' } 
     });
   }
 };
