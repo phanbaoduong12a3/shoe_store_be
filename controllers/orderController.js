@@ -250,10 +250,11 @@ exports.getOrderByNumber = async (req, res) => {
 // =============================================
 // LẤY ĐƠN HÀNG CỦA USER
 // =============================================
+//Tạm thời lấy ra tất cả đơn hàng của user, sau này có thể thêm filter và pagination trạng thái nếu scale lên
 exports.getUserOrders = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.userId; // Lấy từ params hoặc từ middleware auth
-    const { page = 1, limit = 10, status } = req.query;
+    const { page = 1, limit = 999, status } = req.query;
 
     // Build query
     const query = { userId };
