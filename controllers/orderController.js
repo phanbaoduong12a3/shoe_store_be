@@ -573,57 +573,140 @@ exports.deleteOrder = async (req, res) => {
 // =============================================
 exports.getOrderStatistics = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, granularity = 'day' } = req.query; // granularity: day, week, month
 
-    // Build query for date range
+    // 1. Xây dựng truy vấn ngày tháng
     const dateQuery = {};
     if (startDate || endDate) {
       dateQuery.createdAt = {};
       if (startDate) dateQuery.createdAt.$gte = new Date(startDate);
       if (endDate) dateQuery.createdAt.$lte = new Date(endDate);
     }
+    
+    // 2. Định nghĩa $group ID cho phân tích theo thời gian (granularity)
+    let groupDateId;
+    let dateFormat;
+    switch (granularity) {
+      case 'week':
+        groupDateId = { year: { $year: '$createdAt' }, week: { $week: '$createdAt' } };
+        dateFormat = '%Y-W%W';
+        break;
+      case 'month':
+        groupDateId = { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } };
+        dateFormat = '%Y-%m';
+        break;
+      case 'day':
+      default:
+        groupDateId = { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } };
+        dateFormat = '%Y-%m-%d';
+        break;
+    }
 
-    // Tổng số đơn hàng
-    const totalOrders = await Order.countDocuments(dateQuery);
+    // --- AGGREGATION PIPELINES ---
 
-    // Số đơn theo trạng thái
-    const ordersByStatus = await Order.aggregate([
+    // 3. KPI Tổng quan: Số lượng đơn hàng theo trạng thái
+    const statusCounts = await Order.aggregate([
       { $match: dateQuery },
-      { $group: { _id: '$status', count: { $sum: 1 } } }
+      { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
 
-    // Số đơn theo trạng thái thanh toán
-    const ordersByPaymentStatus = await Order.aggregate([
+    // 4. Doanh thu, Lợi nhuận và Đơn bị Hủy theo thời gian
+    // Chỉ tính Doanh thu/Lợi nhuận cho đơn 'delivered' và 'paid'
+    const revenueProfitByTime = await Order.aggregate([
       { $match: dateQuery },
-      { $group: { _id: '$paymentStatus', count: { $sum: 1 } } }
+      {
+        $group: {
+          _id: groupDateId,
+          totalRevenue: { 
+            $sum: { 
+              $cond: [
+                { $and: [{ $eq: ['$status', 'delivered'] }, { $eq: ['$paymentStatus', 'paid'] }] }, 
+                '$totalAmount', 
+                0
+              ] 
+            } 
+          },
+          totalProfit: { 
+            $sum: { 
+              $cond: [
+                { $and: [{ $eq: ['$status', 'delivered'] }, { $eq: ['$paymentStatus', 'paid'] }] }, 
+                '$totalProfit', 
+                0
+              ] 
+            } 
+          },
+          cancelledOrders: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0]
+            }
+          },
+          cancelledAmount: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'cancelled'] }, '$totalAmount', 0]
+            }
+          },
+          totalOrders: { $sum: 1 }
+        },
+      },
+      { $sort: { _id: 1 } },
+      { 
+        $project: { 
+          _id: 0, 
+          date: { $dateToString: { format: dateFormat, date: { $min: '$createdAt' } } }, 
+          revenue: '$totalRevenue', 
+          profit: '$totalProfit', 
+          cancelledOrders: 1,
+          cancelledAmount: 1,
+          totalOrders: 1
+        } 
+      }
     ]);
 
-    // Tổng doanh thu (chỉ tính đơn đã thanh toán)
-    const revenueData = await Order.aggregate([
-      { $match: { ...dateQuery, paymentStatus: 'paid' } },
-      { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } }
+    // 5. Thống kê Top Sản phẩm bán chạy (theo số lượng)
+    const topProducts = await Order.aggregate([
+      { $match: { ...dateQuery, status: 'delivered' } }, // Chỉ tính đơn đã giao
+      { $unwind: '$items' }, 
+      {
+        $group: {
+          _id: '$items.productId',
+          productName: { $first: '$items.productName' },
+          totalQuantity: { $sum: '$items.quantity' },
+          totalRevenue: { $sum: '$items.subtotal' },
+        },
+      },
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 1, productName: 1, totalQuantity: 1, totalRevenue: 1 } },
     ]);
 
-    const totalRevenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
+    // 6. Tổng hợp các KPI quan trọng (Toàn bộ thời gian được chọn)
+    const deliveredOrders = statusCounts.find(item => item._id === 'delivered')?.count || 0;
+    const cancelledOrders = statusCounts.find(item => item._id === 'cancelled')?.count || 0;
+    const shippingOrders = statusCounts.find(item => item._id === 'shipping')?.count || 0;
 
-    // Doanh thu theo phương thức thanh toán
-    const revenueByPaymentMethod = await Order.aggregate([
-      { $match: { ...dateQuery, paymentStatus: 'paid' } },
-      { $group: { _id: '$paymentMethod', revenue: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
-    ]);
+    const totalRevenue = revenueProfitByTime.reduce((sum, item) => sum + item.revenue, 0);
+    const totalProfit = revenueProfitByTime.reduce((sum, item) => sum + item.profit, 0);
+    const totalCancelledAmount = revenueProfitByTime.reduce((sum, item) => sum + item.cancelledAmount, 0);
+    const totalOrderCount = revenueProfitByTime.reduce((sum, item) => sum + item.totalOrders, 0);
+
 
     res.status(200).json({ 
       status: 200, 
       data: { 
-        totalOrders,
-        ordersByStatus,
-        ordersByPaymentStatus,
+        totalOrderCount,
+        deliveredOrders,
+        cancelledOrders,
+        shippingOrders,
         totalRevenue,
-        revenueByPaymentMethod
+        totalProfit,
+        totalCancelledAmount,
+        statusCounts: statusCounts,
+        timeSeries: revenueProfitByTime, // Dữ liệu biểu đồ theo thời gian
+        topProducts: topProducts
       } 
     });
   } catch (error) {
-    console.error('GetOrderStatistics Error:', error);
+    console.error('GetAdminDashboardData Error:', error);
     res.status(500).json({ 
       status: 500, 
       data: { message: 'Server error', error: error.message } 
