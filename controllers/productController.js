@@ -359,6 +359,18 @@ exports.updateProduct = async (req, res) => {
       }
     }
 
+    if (updateData.variants && typeof updateData.variants === "string") {
+      updateData.variants = JSON.parse(updateData.variants);
+    }
+    if (updateData.specifications && typeof updateData.specifications === "string") {
+      updateData.specifications = JSON.parse(updateData.specifications);
+    }
+    if (updateData.seo && typeof updateData.seo === "string") {
+      updateData.seo = JSON.parse(updateData.seo);
+    }
+
+    const images = req?.files?.map(file => file.path) || [];
+
     // Cập nhật product
     const updatedProduct = await Product.findByIdAndUpdate(
       productId,
@@ -370,7 +382,7 @@ exports.updateProduct = async (req, res) => {
     res.status(200).json({ 
       status: 200, 
       data: { 
-        message: 'Product updated successfully',
+        message: 'Cập nhật sản phẩm thành công',
         product: updatedProduct
       } 
     });
