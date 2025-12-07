@@ -21,11 +21,13 @@ exports.getCart = async (req, res) => {
     // Tìm giỏ hàng - ưu tiên userId nếu có
     let cart;
     if (userId) {
-      cart = await Cart.findOne({ userId, userId: { $ne: null } })
-        .populate('items.productId', 'name slug images price salePrice isActive');
+      cart = await Cart.findOne({
+  userId: { $ne: null, $eq: userId }
+}).populate('items.productId', 'name slug images price salePrice isActive');
     } else if (sessionId) {
-      cart = await Cart.findOne({ sessionId, sessionId: { $ne: null } })
-        .populate('items.productId', 'name slug images price salePrice isActive');
+      cart = await Cart.findOne({
+  sessionId: { $ne: null, $eq: sessionId }
+}).populate('items.productId', 'name slug images price salePrice isActive');
     }
  
     // Nếu chưa có cart thì trả về cấu trúc mặc định 
