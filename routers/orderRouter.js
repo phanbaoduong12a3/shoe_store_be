@@ -80,7 +80,7 @@ router.delete("/admin/orders/:id", checkLogin, checkAdmin, deleteOrder);
 
 // Lấy thông kê đơn hàng (admin)
 // GET /api/v1/admin/order-report?startDate=2025/1/1&endDate=2025/2/1
-router.get('/admin/orders-report', checkLogin , checkAdmin , getOrderStatistics);
+router.get('/admin/orders-report', getOrderStatistics);
 
 module.exports = router
 
