@@ -41,7 +41,7 @@ exports.createOrder = async (req, res) => {
 
     // Validate shipping address
     if (!shippingAddress.recipientName || !shippingAddress.phone || !shippingAddress.address || 
-        !shippingAddress.ward || !shippingAddress.district || !shippingAddress.city) {
+        !shippingAddress.ward || !shippingAddress.city) {
       return res.status(400).json({ 
         status: 400, 
         data: { message: 'All shipping address fields are required' } 
@@ -65,8 +65,8 @@ exports.createOrder = async (req, res) => {
       loyaltyPointsUsed: loyaltyPointsUsed || 0,
       loyaltyPointsDiscount: loyaltyPointsDiscount || 0,
       totalAmount,
-      paymentMethod,
-      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'pending',
+      paymentMethod: paymentMethod ,
+      paymentStatus: paymentMethod === 'code' ? 'pending' :'paid',
       status: 'pending',
       statusHistory: [{
         status: 'pending',
@@ -121,7 +121,7 @@ exports.getAllOrders = async (req, res) => {
       search,
       startDate,
       endDate,
-      sortBy = 'createdAt',
+      sortBy = 'updateAt',
       order = 'desc'
     } = req.query;
 
@@ -342,6 +342,12 @@ exports.updateOrderStatus = async (req, res) => {
       updatedBy,
       updatedAt: new Date()
     });
+    if(status === 'delivered'){
+      order.paymentStatus='paid';
+    }
+    if(status === 'cancelled'){
+      order.paymentStatus='failed';
+    }
 
     await order.save();
 
@@ -654,7 +660,7 @@ exports.getOrderStatistics = async (req, res) => {
           _id: 0, 
           date: { $dateToString: { format: dateFormat, date: { $min: '$createdAt' } } }, 
           revenue: '$totalRevenue', 
-          profit: '$totalProfit', 
+          profit: '$totalRevenue', 
           cancelledOrders: 1,
           cancelledAmount: 1,
           totalOrders: 1
@@ -670,13 +676,14 @@ exports.getOrderStatistics = async (req, res) => {
         $group: {
           _id: '$items.productId',
           productName: { $first: '$items.productName' },
+          productImage: { $first: '$items.image' },  
           totalQuantity: { $sum: '$items.quantity' },
           totalRevenue: { $sum: '$items.subtotal' },
         },
       },
       { $sort: { totalQuantity: -1 } },
       { $limit: 10 },
-      { $project: { _id: 1, productName: 1, totalQuantity: 1, totalRevenue: 1 } },
+      { $project: { _id: 1, productName: 1,productImage: 1,  totalQuantity: 1, totalRevenue: 1 } },
     ]);
 
     // 6. Tổng hợp các KPI quan trọng (Toàn bộ thời gian được chọn)

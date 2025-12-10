@@ -11,7 +11,7 @@ const ShippingAddressSchema = mongoose.Schema({
   phone: { type: String, required: true },
   address: { type: String, required: true },
   ward: { type: String, required: true },
-  district: { type: String, required: true },
+  district: { type: String },
   city: { type: String, required: true }
 }, { _id: false });
 
