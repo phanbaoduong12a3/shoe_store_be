@@ -11,7 +11,7 @@ const VariantSchema = mongoose.Schema({
   colorCode: { type: String },
   size: { type: Number, required: true },
   stock: { type: Number, default: 0 },
-  sku: { type: String, required: true, unique: true }
+  sku: { type: String, required: true }
 }, { _id: true });
 
 const SpecificationSchema = mongoose.Schema({

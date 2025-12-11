@@ -209,7 +209,11 @@ exports.createProduct = async (req, res) => {
       seo = JSON.parse(seo);
     }
 
-    const images = req?.files?.map(file => file.path) || [];
+    const images = req.files.map((file, index) => ({
+      url: file.path,
+      isPrimary: index === 0,
+      alt: file.originalname
+    }));
 
 
     // Validate input
@@ -299,6 +303,12 @@ exports.updateProduct = async (req, res) => {
   try {
     const productId = req.params.id;
     const updateData = req.body;
+    const images = req.files.map((file, index) => ({
+      url: file.path,
+      isPrimary: index === 0,
+      alt: file.originalname
+    }));
+    updateData.images = images || [];
 
     // Kiểm tra product tồn tại
     const product = await Product.findById(productId);
@@ -368,8 +378,6 @@ exports.updateProduct = async (req, res) => {
     if (updateData.seo && typeof updateData.seo === "string") {
       updateData.seo = JSON.parse(updateData.seo);
     }
-
-    const images = req?.files?.map(file => file.path) || [];
 
     // Cập nhật product
     const updatedProduct = await Product.findByIdAndUpdate(
