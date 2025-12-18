@@ -41,7 +41,14 @@ exports.getAllBlogs = async (req, res) => {
     const query = { isPublished: true };
     
     if (categoryId) query.categoryId = categoryId;
-    if (tag) query.tags = tag;
+    if (tag) {
+      query.tags = {
+        $elemMatch: {
+          $regex: new RegExp(`(^|,)\\s*${tag}\\s*(,|$)`, 'i'),
+        },
+      };
+    }
+
     
     if (search) {
       query.$or = [
@@ -287,6 +294,17 @@ exports.createBlog = async (req, res) => {
       }
     }
 
+    // if (seo && typeof seo === 'string') {
+    //   try {
+    //     seo = JSON.parse(seo);
+    //   } catch (err) {
+    //     return res.status(400).json({
+    //       status: 400,
+    //       data: { message: 'Invalid seo JSON format' }
+    //     });
+    //   }
+    // }
+
     // Xử lý thumbnail nếu có upload
     const thumbnail = req.file ? req.file.path : null;
 
@@ -300,7 +318,7 @@ exports.createBlog = async (req, res) => {
       authorId,
       categoryId: categoryId || null,
       tags: tags || [],
-      seo: seo || {},
+      seo: {},
       isPublished: isPublished || false,
       publishedAt: isPublished ? new Date() : null
     });
