@@ -306,7 +306,7 @@ router.get("/blogs/author/:authorId", getBlogsByAuthor);
  *       500:
  *         description: Lỗi server
  */
-router.get("/admin/blogs", checkLogin, checkAdmin, getAllBlogsAdmin);
+router.get("/admin/blogs", getAllBlogsAdmin);
 
 /**
  * @swagger

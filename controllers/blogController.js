@@ -307,7 +307,10 @@ exports.createBlog = async (req, res) => {
 
     // Xử lý thumbnail nếu có upload
     const thumbnail = req.file ? req.file.path : null;
-
+    let parsedTags = tags;
+    if (tags && typeof tags === 'string') {
+      parsedTags = JSON.parse(tags);
+    }
     // Tạo blog mới
     const newBlog = await Blog.create({
       title,
@@ -317,7 +320,7 @@ exports.createBlog = async (req, res) => {
       thumbnail,
       authorId,
       categoryId: categoryId || null,
-      tags: tags || [],
+      tags: parsedTags || [],
       seo: {},
       isPublished: isPublished || false,
       publishedAt: isPublished ? new Date() : null
