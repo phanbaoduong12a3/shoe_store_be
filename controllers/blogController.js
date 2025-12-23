@@ -358,7 +358,6 @@ exports.updateBlog = async (req, res) => {
         data: { message: 'Blog not found' } 
       });
     }
-
     // Kiểm tra slug nếu có thay đổi
     if (updateData.slug && updateData.slug !== blog.slug) {
       const existingBlog = await Blog.findOne({ 
@@ -393,7 +392,10 @@ exports.updateBlog = async (req, res) => {
     if (updateData.isPublished === false && blog.isPublished) {
       updateData.publishedAt = null;
     }
-
+    // Convert tags
+    if (updateData.tags && typeof updateData.tags === 'string') {
+        updateData.tags = JSON.parse(updateData.tags);
+    }
     // Cập nhật blog
     const updatedBlog = await Blog.findByIdAndUpdate(
       blogId,

@@ -428,7 +428,7 @@ router.post("/admin/blogs", checkLogin, checkAdmin, uploadBlogThumbnail, createB
  *       500:
  *         description: Lỗi server
  */
-router.put("/admin/blogs/:id", checkLogin, checkAdmin, updateBlog);
+router.put("/admin/blogs/:id", checkLogin, checkAdmin,uploadBlogThumbnail, updateBlog);
 
 /**
  * @swagger
