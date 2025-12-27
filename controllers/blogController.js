@@ -106,6 +106,7 @@ exports.getAllBlogsAdmin = async (req, res) => {
       limit = 20, 
       isPublished,
       categoryId,
+      tag,
       authorId,
       search, 
       sortBy = 'createdAt', 
@@ -118,7 +119,13 @@ exports.getAllBlogsAdmin = async (req, res) => {
     if (isPublished !== undefined) query.isPublished = isPublished === 'true';
     if (categoryId) query.categoryId = categoryId;
     if (authorId) query.authorId = authorId;
-    
+    if (tag) {
+      query.tags = {
+        $elemMatch: {
+          $regex: new RegExp(`(^|,)\\s*${tag}\\s*(,|$)`, 'i'),
+        },
+      };
+    }
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
