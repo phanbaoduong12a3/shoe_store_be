@@ -121,7 +121,7 @@ exports.getAllOrders = async (req, res) => {
       search,
       startDate,
       endDate,
-      sortBy = 'updateAt',
+      sortBy = 'updatedAt',
       order = 'desc'
     } = req.query;
 
@@ -158,7 +158,8 @@ exports.getAllOrders = async (req, res) => {
       .populate('userId', 'fullName email phone')
       .sort(sortOptions)
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      ;
 
     const total = await Order.countDocuments(query);
 
@@ -254,18 +255,20 @@ exports.getOrderByNumber = async (req, res) => {
 exports.getUserOrders = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.userId; // Lấy từ params hoặc từ middleware auth
-    const { page = 1, limit = 999, status } = req.query;
+    const { page = 1, limit = 999, status , paymentMethod, paymentStatus} = req.query;
 
     // Build query
     const query = { userId };
-    if (status) query.status = status;
+   if (status) query.status = status;
+    if (paymentStatus) query.paymentStatus = paymentStatus;
+    if (paymentMethod) query.paymentMethod = paymentMethod;
 
     // Pagination
     const skip = (page - 1) * limit;
 
     const orders = await Order.find(query)
       .populate('items.productId', 'name slug images')
-      .sort({ createdAt: -1 })
+      .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
