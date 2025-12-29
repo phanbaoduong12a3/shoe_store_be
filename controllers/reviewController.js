@@ -3,6 +3,7 @@ const cloudinary = require('../config/cloudinary');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
+const mongoose = require('mongoose');
 
 // Cấu hình Multer với Cloudinary Storage cho review images
 const storage = new CloudinaryStorage({
@@ -58,17 +59,24 @@ exports.getProductReviews = async (req, res) => {
 
     // Tính thống kê rating
     const ratingStats = await Review.aggregate([
-      { $match: { productId: require('mongoose').Types.ObjectId(productId), isApproved: true } },
-      { $group: {
-        _id: '$rating',
-        count: { $sum: 1 }
-      }},
-      { $sort: { _id: -1 } }
+      {
+        $match: {
+          productId: productId, // 👈 convert từ string
+          isApproved: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$rating',
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: -1 } },
     ]);
 
     const totalReviews = await Review.countDocuments({ productId, isApproved: true });
     const avgRatingData = await Review.aggregate([
-      { $match: { productId: require('mongoose').Types.ObjectId(productId), isApproved: true } },
+      { $match: { productId: productId, isApproved: true } },
       { $group: {
         _id: null,
         avgRating: { $avg: '$rating' }
@@ -238,13 +246,6 @@ exports.createReview = async (req, res) => {
       });
     }
 
-    if (order.userId.toString() !== userId) {
-      return res.status(403).json({ 
-        status: 403, 
-        data: { message: 'You do not have permission to review this order' } 
-      });
-    }
-
     // Kiểm tra order đã delivered
     if (order.status !== 'delivered') {
       return res.status(400).json({ 
@@ -281,7 +282,7 @@ exports.createReview = async (req, res) => {
     }
 
     // Xử lý images nếu có upload
-    const images = req.files ? req.files.map(file => file.path) : [];
+    const images = req.files.map(file => file.path);
 
     // Tạo review mới
     const newReview = await Review.create({
@@ -290,13 +291,13 @@ exports.createReview = async (req, res) => {
       orderId,
       rating,
       comment,
-      images,
+      images: images || [],
       reviewer: {
         name: user.fullName,
         avatar: user.avatar
       },
       isVerifiedPurchase: true,
-      isApproved: false // Mặc định chưa duyệt, cần admin duyệt
+      isApproved: true
     });
 
     res.status(200).json({ 
