@@ -76,13 +76,13 @@ exports.getProductReviews = async (req, res) => {
 
     const totalReviews = await Review.countDocuments({ productId, isApproved: true });
     const avgRatingData = await Review.aggregate([
-      { $match: { productId: productId, isApproved: true } },
+      { $match: { productId: new mongoose.Types.ObjectId(productId), isApproved: true } },
       { $group: {
         _id: null,
         avgRating: { $avg: '$rating' }
       }}
     ]);
-
+    console.log("avgRaingData: ", avgRatingData);
     const avgRating = avgRatingData.length > 0 ? avgRatingData[0].avgRating : 0;
 
     res.status(200).json({ 
