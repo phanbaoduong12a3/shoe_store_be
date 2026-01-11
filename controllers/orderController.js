@@ -1,6 +1,9 @@
 
 const { Order, Product, User } = require('../models');
 require('dotenv').config();
+const qs = require('qs');
+const crypto = require('crypto');
+const moment = require('moment-timezone');
 
 // =============================================
 // TẠO ĐơN HÀNG MỚI (PUBLIC/CUSTOMER)
@@ -589,7 +592,11 @@ exports.getOrderStatistics = async (req, res) => {
     if (startDate || endDate) {
       dateQuery.createdAt = {};
       if (startDate) dateQuery.createdAt.$gte = new Date(startDate);
-      if (endDate) dateQuery.createdAt.$lte = new Date(endDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateQuery.createdAt.$lte = end;
+      }
     }
     
     // 2. Định nghĩa $group ID cho phân tích theo thời gian (granularity)
@@ -639,7 +646,7 @@ exports.getOrderStatistics = async (req, res) => {
             $sum: { 
               $cond: [
                 { $and: [{ $eq: ['$status', 'delivered'] }, { $eq: ['$paymentStatus', 'paid'] }] }, 
-                '$totalProfit', 
+                '$subtotal', 
                 0
               ] 
             } 
@@ -663,7 +670,7 @@ exports.getOrderStatistics = async (req, res) => {
           _id: 0, 
           date: { $dateToString: { format: dateFormat, date: { $min: '$createdAt' } } }, 
           revenue: '$totalRevenue', 
-          profit: '$totalRevenue', 
+          profit: '$totalProfit', 
           cancelledOrders: 1,
           cancelledAmount: 1,
           totalOrders: 1
@@ -720,6 +727,144 @@ exports.getOrderStatistics = async (req, res) => {
     res.status(500).json({ 
       status: 500, 
       data: { message: 'Server error', error: error.message } 
+    });
+  }
+};
+
+exports.createVNPayPayment = async (req, res) => {
+  try {
+    const tmnCode = process.env.VNP_TMN_CODE;
+    const secretKey = process.env.VNP_HASH_SECRET;
+    const vnpUrl = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+    const returnUrl = 'http://localhost:8080/api/v1/vnpay/return';
+
+    const amount = Number(req.body.amount);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Amount invalid' });
+    }
+
+    // ✅ VNPay yêu cầu GMT+7
+    const createDate = moment()
+      .tz('Asia/Ho_Chi_Minh')
+      .format('YYYYMMDDHHmmss');
+
+    const orderId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+
+    let vnpParams = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: tmnCode,
+      vnp_Locale: 'vn',
+      vnp_CurrCode: 'VND',
+      vnp_TxnRef: orderId,
+      vnp_OrderInfo: 'Thanh toan don hang',
+      vnp_OrderType: 'other',
+      vnp_Amount: amount * 100,
+      vnp_ReturnUrl: returnUrl,
+      vnp_IpAddr: '127.0.0.1',
+      vnp_CreateDate: createDate,
+    };
+
+    // SORT PARAMS
+    vnpParams = Object.keys(vnpParams)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = vnpParams[key];
+        return acc;
+      }, {});
+
+    const signData = qs.stringify(vnpParams, { encode: false });
+
+    const secureHash = crypto
+      .createHmac('sha512', secretKey)
+      .update(signData, 'utf-8')
+      .digest('hex');
+
+    vnpParams.vnp_SecureHashType = 'HmacSHA512';
+    vnpParams.vnp_SecureHash = secureHash;
+
+    const paymentUrl =
+      vnpUrl + '?' + qs.stringify(vnpParams, { encode: true });
+
+    console.log('SIGN DATA:', signData);
+    console.log('HASH:', secureHash);
+    console.log('FINAL URL:', paymentUrl);
+
+    res.json({
+      status: 200,
+      data: { paymentUrl },
+    });
+  } catch (error) {
+    console.error('VNPay Create Error:', error);
+    res.status(500).json({
+      status: 500,
+      message: 'Create VNPay payment failed',
+    });
+  }
+};
+
+exports.vnpayReturn = async (req, res) => {
+  try {
+    const vnpParams = { ...req.query };
+    const secureHash = vnpParams.vnp_SecureHash;
+
+    delete vnpParams.vnp_SecureHash;
+    delete vnpParams.vnp_SecureHashType;
+
+    const secretKey = process.env.VNP_HASH_SECRET;
+
+    const sortedParams = Object.keys(vnpParams)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = vnpParams[key];
+        return acc;
+      }, {});
+
+    const signData = qs.stringify(sortedParams, { encode: false });
+    const checkHash = crypto
+      .createHmac('sha512', secretKey)
+      .update(signData)
+      .digest('hex');
+
+    if (secureHash !== checkHash) {
+      return res.status(400).json({
+        status: 400,
+        data: { message: 'Invalid signature' }
+      });
+    }
+
+    const orderNumber = vnpParams.vnp_TxnRef;
+    const responseCode = vnpParams.vnp_ResponseCode;
+
+    const order = await Order.findOne({ orderNumber });
+
+    if (!order) {
+      return res.status(404).json({
+        status: 404,
+        data: { message: 'Order not found' }
+      });
+    }
+
+    if (responseCode === '00') {
+      order.paymentStatus = 'paid';
+      order.statusHistory.push({
+        status: 'paid',
+        note: 'Thanh toán VNPay thành công',
+        updatedAt: new Date()
+      });
+    } else {
+      order.paymentStatus = 'failed';
+    }
+
+    await order.save();
+
+    res.redirect(`http://localhost:3000/payment-result?success=${responseCode === '00'}`);
+
+  } catch (error) {
+    console.error('VNPay Return Error:', error);
+    res.status(500).json({
+      status: 500,
+      data: { message: 'Server error', error: error.message }
     });
   }
 };
