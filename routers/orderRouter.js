@@ -14,7 +14,9 @@ const {
   updateShippingInfo,
   cancelOrder,
   deleteOrder,
-  getOrderStatistics
+  getOrderStatistics,
+  createVNPayPayment,
+  vnpayReturn
 } = orderController;
 
 // =============================================
@@ -81,6 +83,10 @@ router.delete("/admin/orders/:id", checkLogin, checkAdmin, deleteOrder);
 // Lấy thông kê đơn hàng (admin)
 // GET /api/v1/admin/order-report?startDate=2025/1/1&endDate=2025/2/1
 router.get('/admin/orders-report', getOrderStatistics);
+
+router.post('/vnpay/create-payment', createVNPayPayment);
+
+router.get('/vnpay/return', vnpayReturn);
 
 module.exports = router
 
@@ -740,6 +746,90 @@ module.exports = router
  *         description: Chưa đăng nhập
  *       403:
  *         description: Không có quyền admin
+ *       500:
+ *         description: Lỗi server
+ */
+/**
+ * @swagger
+ * /api/v1/vnpay/create-payment:
+ *   post:
+ *     summary: Tạo link thanh toán VNPay
+ *     tags: [VNPay]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orderId
+ *               - amount
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *                 example: 64f1a2c9e8c4a12abc123456
+ *               amount:
+ *                 type: number
+ *                 example: 1500000
+ *     responses:
+ *       200:
+ *         description: Tạo link thanh toán VNPay thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     vnpUrl:
+ *                       type: string
+ *                       example: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?...
+ *       400:
+ *         description: Thiếu orderId hoặc amount
+ *       404:
+ *         description: Không tìm thấy đơn hàng
+ *       500:
+ *         description: Lỗi server
+ */
+/**
+ * @swagger
+ * /api/v1/vnpay/return:
+ *   get:
+ *     summary: VNPay redirect sau khi thanh toán
+ *     tags: [VNPay]
+ *     parameters:
+ *       - in: query
+ *         name: vnp_TxnRef
+ *         schema:
+ *           type: string
+ *         description: Mã đơn hàng
+ *       - in: query
+ *         name: vnp_ResponseCode
+ *         schema:
+ *           type: string
+ *         description: Mã kết quả thanh toán (00 = thành công)
+ *       - in: query
+ *         name: vnp_Amount
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: vnp_SecureHash
+ *         schema:
+ *           type: string
+ *         description: Chữ ký bảo mật VNPay
+ *     responses:
+ *       200:
+ *         description: Xử lý kết quả thanh toán thành công
+ *       400:
+ *         description: Chữ ký không hợp lệ
+ *       404:
+ *         description: Không tìm thấy đơn hàng
  *       500:
  *         description: Lỗi server
  */
