@@ -850,11 +850,12 @@ exports.vnpayReturn = async (req, res) => {
         note: 'Thanh toán VNPay thất bại',
         updatedAt: new Date()
       });
+      await Order.findByIdAndDelete(order._id);
     }
 
     await order.save();
 
-    res.redirect(`http://localhost:3000/payment-result?success=${responseCode === '00'}`);
+    res.redirect(`http://localhost:3000/my-order?success=${responseCode === '00'}`);
 
   } catch (error) {
     console.error('VNPay Return Error:', error);
