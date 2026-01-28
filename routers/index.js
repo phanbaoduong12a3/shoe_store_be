@@ -11,6 +11,7 @@ const orderRouters = require('./orderRouter');
 const productRouter = require('./productRouter');
 const reviewRouter = require('./reviewRouter');
 const voucherRouter = require('./voucherRouter');
+const aiRouter = require('./aiRouter');
 
 router.use(authRouter);
 router.use(userRouter);
@@ -23,5 +24,6 @@ router.use(orderRouters);
 router.use(productRouter);
 router.use(reviewRouter);
 router.use(voucherRouter);
+router.use(aiRouter);
 
 module.exports = router;
