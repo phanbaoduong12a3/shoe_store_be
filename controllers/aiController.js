@@ -40,7 +40,7 @@ const chatWithAI = async (req, res) => {
 
 
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 
 
