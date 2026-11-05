@@ -742,7 +742,7 @@ exports.createVNPayPayment = async (req, res) => {
     const tmnCode = process.env.VNP_TMN_CODE;
     const secretKey = process.env.VNP_HASH_SECRET;
     const vnpUrl = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
-    const returnUrl = 'http://localhost:8080/api/v1/vnpay/return';
+    const returnUrl = 'https://paleontographic-antonetta-acquiescent.ngrok-free.dev/api/v1/vnpay/return';
 
     const amount = Number(req.body.amount);
 
