@@ -1,0 +1,27 @@
+name: Deploy Node.js API to IIS
+
+on:
+  push:
+  branches: [ "main" ] # Hoặc nhánh chính của bạn (ví dụ: master)
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+
+    - name: Install dependencies
+      run: npm install --production
+
+    - name: Copy files to IIS web directory & Restart IIS
+      run: |
+        robocopy . "D:\shoe_store\shoe_store_be" /MIR /XD .git node_modules .github /XF .env web.config
+        iisreset
+      shell: pwsh
