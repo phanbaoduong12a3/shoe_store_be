@@ -81,7 +81,7 @@ const {
  *       500:
  *         description: Lỗi server
  */
-router.get("/blogs", getAllBlogs);
+// router.get("/blogs", getAllBlogs);
 
 /**
  * @swagger
