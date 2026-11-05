@@ -25,4 +25,4 @@ jobs:
         run: |
           robocopy . "D:\shoe_store\shoe_store_be" /MIR /XD .git node_modules .github /XF .env web.config
           iisreset
-        shell: pwsh
+        shell: cmd
